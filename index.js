@@ -15,9 +15,9 @@ const OPTIONS = {
 
 //We need a function which handles requests and send response
 function handleRequest(request, response){
-    console.log('got request');
-    requestResults(response, function finish(){
-        response.end('finished.');
+    response.write('{ responses : [');
+    rrequestResultsWaitForAllRequests(response, function finish(){
+        response.end('] }');
     });
 }
 
@@ -30,16 +30,43 @@ server.listen(LISTENING_PORT, function indicateStartedServer(){
     console.log("Server listening on: http://localhost:%s", LISTENING_PORT);
 });
 
-function requestResults(outres, done){
-    console.log('making a request');
-    var req = http.request(OPTIONS, function(inres) {
-      console.log('STATUS: ' + inres.statusCode);
-      console.log('HEADERS: ' + JSON.stringify(inres.headers));
-      inres.setEncoding('utf8');
-      inres.on('data', function (chunk) {
-          outres.write(chunk);
-          console.log('BODY: ' + chunk);
-          done();
-      });
-    }).end();
+function requestResultsOnTheFly(outres, done){
+    var requestsCompleted = 0;
+    var requestsCount = 10;
+    for (var i=0; i < requestsCount; i++) { 
+        http.request(OPTIONS, function(inres) {
+          inres.setEncoding('utf8');
+          inres.on('data', function (chunk) {
+              outres.write(chunk);
+              ++requestsCompleted;
+              if(requestsCompleted == requestsCount) {
+                  done();
+              }else{
+                  outres.write(',');
+              }
+          });
+        }).end();
+    }
+}
+
+
+function requestResultsWaitForAllRequests(outres, done){
+    var requestsCompleted = 0;
+    var requestsCount = 10;
+    var results = ;
+    for (var i=0; i < requestsCount; i++) { 
+        var request = http.request(OPTIONS, function(inres) {
+          inres.setEncoding('utf8');
+          inres.on('data', function (chunk) {
+              outres.write(chunk);
+              ++requestsCompleted;
+              if(requestsCompleted == requestsCount) {
+                  done();
+              }else{
+                  outres.write(',');
+              }
+          });
+        });
+        requests
+    }
 }

@@ -8,7 +8,6 @@ var responseCount = 0;
 
 //We need a function which handles requests and send response
 function handleRequest(request, response){
-    console.log('got request');
     response.end(JSON.stringify({response : ++responseCount }));
 }
 
