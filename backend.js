@@ -9,6 +9,7 @@ var responseCount = 0;
 //We need a function which handles requests and send response
 function handleRequest(request, response){
     response.end(JSON.stringify({response : ++responseCount }));
+    console.log('served [%d] requests', responseCount);
 }
 
 //Create a server

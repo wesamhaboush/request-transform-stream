@@ -5,20 +5,21 @@ const http = require('http');
 const LISTENING_PORT = 8080; 
 const TARGET_PORT = 8081; 
 const TARGET_HOST = 'localhost';
-
+const REQUEST_COUNT = 10;
+const KA_AGENT = new http.Agent({keepAlive : true, keepAliveMsecs : 30000});
 const OPTIONS = {
   hostname: TARGET_HOST,
   port: TARGET_PORT,
   method: 'GET',
+  agent: KA_AGENT
 };
 
-
+var incomingRequestCount = 0;
 //We need a function which handles requests and send response
 function handleRequest(request, response){
-    response.write('{ responses : [');
-    rrequestResultsWaitForAllRequests(response, function finish(){
-        response.end('] }');
-    });
+    requestResultsWaitForAllRequests(response);
+//    requestResultsOnTheFly(response);
+    console.log('incoming request count [%d]', ++incomingRequestCount);
 }
 
 //Create a server
@@ -30,17 +31,18 @@ server.listen(LISTENING_PORT, function indicateStartedServer(){
     console.log("Server listening on: http://localhost:%s", LISTENING_PORT);
 });
 
-function requestResultsOnTheFly(outres, done){
+function requestResultsOnTheFly(outres){
+    outres.setHeader('content-type', 'application/json');
+    outres.write('{ responses : [');
     var requestsCompleted = 0;
-    var requestsCount = 10;
-    for (var i=0; i < requestsCount; i++) { 
+    for (var i=0; i < REQUEST_COUNT; i++) { 
         http.request(OPTIONS, function(inres) {
           inres.setEncoding('utf8');
           inres.on('data', function (chunk) {
               outres.write(chunk);
               ++requestsCompleted;
-              if(requestsCompleted == requestsCount) {
-                  done();
+              if(requestsCompleted == REQUEST_COUNT) {
+		  outres.end('] }');
               }else{
                   outres.write(',');
               }
@@ -50,23 +52,23 @@ function requestResultsOnTheFly(outres, done){
 }
 
 
-function requestResultsWaitForAllRequests(outres, done){
+function requestResultsWaitForAllRequests(outres){
     var requestsCompleted = 0;
-    var requestsCount = 10;
-    var results = ;
-    for (var i=0; i < requestsCount; i++) { 
+    var results = '{ responses : [';
+    for (var i=0; i < REQUEST_COUNT; i++) { 
         var request = http.request(OPTIONS, function(inres) {
           inres.setEncoding('utf8');
           inres.on('data', function (chunk) {
-              outres.write(chunk);
+              results += chunk;
               ++requestsCompleted;
-              if(requestsCompleted == requestsCount) {
-                  done();
+              if(requestsCompleted == REQUEST_COUNT) {
+                  results += '] }';
+		  outres.setHeader('content-type', 'application/json');
+                  outres.end(results);
               }else{
-                  outres.write(',');
+                  results += ',';
               }
           });
-        });
-        requests
+        }).end();
     }
 }
