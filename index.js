@@ -17,9 +17,15 @@ const OPTIONS = {
 var incomingRequestCount = 0;
 //We need a function which handles requests and send response
 function handleRequest(request, response){
-    requestResultsWaitForAllRequests(response);
-//    requestResultsOnTheFly(response);
-    console.log('incoming request count [%d]', ++incomingRequestCount);
+	if( request.url.indexOf('once') > 0 ){
+		requestResultsWaitForAllRequests(response);
+	} else if ( request.url.indexOf('stream') > 0 ) {
+		requestResultsOnTheFly(response);
+	} else {
+		response.statusCode = 404;
+		response.end('unidentified request');
+	}
+	console.log('incoming request count [%d]', ++incomingRequestCount);
 }
 
 //Create a server
@@ -33,6 +39,7 @@ server.listen(LISTENING_PORT, function indicateStartedServer(){
 
 function requestResultsOnTheFly(outres){
     outres.setHeader('content-type', 'application/json');
+    outres.setHeader('Transfer-Encoding', 'chunked');
     outres.write('{ responses : [');
     var requestsCompleted = 0;
     for (var i=0; i < REQUEST_COUNT; i++) { 
@@ -63,6 +70,7 @@ function requestResultsWaitForAllRequests(outres){
               ++requestsCompleted;
               if(requestsCompleted == REQUEST_COUNT) {
                   results += '] }';
+                  outres.setHeader('Content-Length', Buffer.byteLength(results));
 		  outres.setHeader('content-type', 'application/json');
                   outres.end(results);
               }else{
